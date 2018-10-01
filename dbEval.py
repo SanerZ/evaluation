@@ -65,13 +65,13 @@ class Config:
         self.ds_cfgDir = dataDir
         dsParams = namedtuple('DataSetParameters', ['resize', 'visible'])
         self.dsDict = {
-                'benchmark_1w_gt' :  dsParams(0, 0),
-                'anfang_bg1w_gt'  :  dsParams(0, 0),
+                # 'benchmark_1w_gt' :  dsParams(0, 0),
+                # 'anfang_bg1w_gt'  :  dsParams(0, 0),
                 'wider'           :  dsParams(1, 1),
                 'wider_fddb'      :  dsParams(1, 1), 
         }
         
-        self.bgName = 'lst'
+        self.bgName = 'anfang_bg1w_gt'
         
         self.thr = 0.3
         self.wrongDir = self.resDir/'det_wrong'

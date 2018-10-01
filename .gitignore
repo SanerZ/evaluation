@@ -4,6 +4,7 @@ det_wrong/
 *.npy
 
 run.ipynb
+algNames.lst
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
