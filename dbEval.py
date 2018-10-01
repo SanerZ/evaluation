@@ -53,24 +53,22 @@ class Config:
         expParams = namedtuple('ExpParameters', ['hr', 'vr', 'ar', 'overlap', 'filter', 'visible'])
         
         self.expsDict = {
-            'Reasonable':   expParams([0.06,0.15],   [.01,inf],  0,  .45, 1., 1),
-            'All':          expParams([0,inf],   [.01,inf],   0,  .45, 1., 1),
-#            'small':          expParams([0,0.07],   [.01,inf],   0,  .45, 1., 1),
-#            'medium':          expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
-   #         'large1':          expParams([0.1,inf],   [.01,inf],   0,  .45, 1., 1),
-#            'large2':          expParams([150,inf],   [.01,inf],   0,  .45, 1., 1),
+            'Reasonable':   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
+            'All'       :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
+            # 'small'     :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
+            # 'medium'    :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
         }
         
         
         self.algNames = load_cfg(algFile)
         
-        dsParams = namedtuple('DataSetParameters', ['resize', 'visible'])
         self.ds_cfgDir = dataDir
+        dsParams = namedtuple('DataSetParameters', ['resize', 'visible'])
         self.dsDict = {
-               # 'benchmark_1w_gt' : dsParams(0, 0),
-                # 'anfang_bg1w_gt' : dsParams(0, 0),
-                'wider' : dsParams(1, 1),
-                'wider_fddb' : dsParams(1, 1), 
+                'benchmark_1w_gt' :  dsParams(0, 0),
+                'anfang_bg1w_gt'  :  dsParams(0, 0),
+                'wider'           :  dsParams(1, 1),
+                'wider_fddb'      :  dsParams(1, 1), 
         }
         
         self.bgName = 'lst'
