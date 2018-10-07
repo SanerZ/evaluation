@@ -30,15 +30,18 @@ from detectron.loggers import lcfg, pl, ps
 def compRef(cfg):
     bgName = cfg.resDir/cfg.bgName
     dts = loadDts(cfg, bgName.as_posix())
-    ref = dict()
+    ref = defaultdict(list)
     if len(dts) == 0:
         return ref
     
-    lcfg({'logfile': (bgName/'Ref').as_posix()})
+    lcfg({'logfile': (bgName/'bgRef').as_posix()})
+    ps.info('\n\n\t')
     print('\nExp reference threshold:')
-    print('\n{0:<28}\t{1[0]:<8g}\t{1[1]:<8g}\t{1[2]:<8g}\t{1[3]:<8g}'.\
-                  format('', 0.1**np.arange(4,0,-1)))
+    pl.info('{0:^28}\t{1[0]:<8g}\t{1[1]:<8g}\t{1[2]:<8g}\t{1[3]:<8g}'.\
+                  format('reference', 0.1**np.arange(4,0,-1)))
     for algNm in cfg.algNames:
+        if dts[algNm] == []:
+            continue
         det = [np.column_stack((d, [i]*len(d))) for i,d in enumerate(dts[algNm])]
         nImg = len(det)
         det = np.concatenate(det, 0)
@@ -66,7 +69,7 @@ def loadDts(cfg, pltName):
         if not osp.exists(aNm+'.txt'):
             continue
         # load from txt file format as LTWH
-        print('\tAlgorithm #%d: %s' % (d, a))
+        print('\tAlgorithm #%d: %s' % (d+1, a))
         dt0 = np.loadtxt(aNm+'.txt').reshape((-1,6))
         ids = dt0[:,0].astype(int)
         dt = [dt0[ids==i,1:] for i in range(max(ids)+1)]
@@ -105,7 +108,7 @@ def loadGts(cfg, pltName):
             gts[e].extend(np.load(gNm))
             continue
         
-        print('\tExperiment #%d: %s' % (g, e))
+        print('\tExperiment #%d: %s' % (g+1, e))
         exp = cfg.expsDict[e]
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
                            bnds=cfg.bnds, aspectRatio=cfg.aspectRatio)
@@ -126,14 +129,14 @@ def loadGts(cfg, pltName):
 
 def evalAlgs(cfg, pltName, gts, dts, gt_sides):
     print('\nEvaluating: %s' % pltName)
-    res = defaultdict(list)
+    res = dict()
     for g, expNm in enumerate(cfg.expsDict):
         for d, algNm in enumerate(cfg.algNames):
             # check whether exsits ev-Reasonable-FCN.npy
             evNm = osp.join(pltName, ''.join(['ev-',expNm,'-',algNm,'.npy']))
             if not cfg.reapply[2] and osp.exists(evNm):
                 r = np.load(evNm)
-                res[expNm, algNm].extend(r)
+                res[expNm, algNm] = r.tolist()
                 continue
 
             gt, dt = gts[expNm], dts[algNm]
@@ -141,7 +144,7 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides):
                 continue
             # evalRes from gt and dt
             print('\tExp %d/%d, Alg %d/%d,: %s/%s' % \
-                  (g, len(cfg.expsDict), d, len(cfg.algNames), expNm, algNm))
+                  (g+1, len(cfg.expsDict), d+1, len(cfg.algNames), expNm, algNm))
             # filter the detection results
             exp = cfg.expsDict[expNm]
             hr = np.multiply(exp.hr, [1./exp.filter, exp.filter])
@@ -149,11 +152,11 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides):
                                       bx[:,3]<hr[1]*gt_sides[i]), axis=0))] \
                     for i, bx in enumerate(dt)]
             r = evalRes(gt, dt, ovthresh=exp.overlap)
-            res[expNm, algNm].extend(r)
+            res[expNm, algNm] = r
             np.save(evNm, r)
     return res    
 
-def plotExps(cfg, res, plotName, ref_score=None):
+def plotExps(cfg, res, plotName, ref_score):
     """
     % Plot all ROC or PR curves.
     %
@@ -168,25 +171,24 @@ def plotExps(cfg, res, plotName, ref_score=None):
     print('\nPlotting: %s' % plotName)
     roc = defaultdict(list)
     ref = 0.1**np.arange(4,0,-1) 
-    for (e, a), (g, d) in res.items():
-        g, d = list(g), list(d)
-        try:
-            ref_thr = ref_score[a]
-        except:
-            ref_thr = None
-        
-        print('\tExp %d/%d, Alg %d/%d,: %s/%s' % \
-             (cfg.expsDict.keys().index(e), len(cfg.expsDict), \
-              cfg.algNames.index(a), len(cfg.algNames), e, a))
-        
-        r = list(compRoc(g, d, ref_score=ref_thr))
-        if cfg.plotAlg:
-            roc[a].append([e]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr],[]...]
-        else:
-            roc[e].append([a]+r)    # [[algNm, rec, prec, ap, recpi, ref_thr],[]...]
+    for ie, expNm in enumerate(cfg.expsDict):
+        for ia, algNm in enumerate(cfg.algNames):
+            try:
+                g, d = res[expNm, algNm]
+            except:
+                continue
+
+            print('\tExp %d/%d, Alg %d/%d,: %s/%s' % \
+                 (ie+1, len(cfg.expsDict), ia+1, len(cfg.algNames), expNm, algNm))
+            
+            ref_thr = ref_score[algNm]
+            r = list(compRoc(g, d, ref_score=ref_thr))
+            if cfg.plotAlg:
+                roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr],[]...]
+            else:
+                roc[expNm].append([algNm]+r)    # [[algNm, rec, prec, ap, recpi, ref_thr],[]...]
     
-        
-    print('\n')
+    
     # Generate plots
     for k, v in roc.items():
         colors = [np.maximum(np.mod(np.array([78,121,42])*(i+1),255)/255.,.3) \
@@ -202,6 +204,7 @@ def plotExps(cfg, res, plotName, ref_score=None):
         
         lcfg({'logfile': saveName})
         ps.info('\n\n\t')
+        print('\nExp reference threshold:')
         pl.info('{0:^28}\t{1[0]:<11g}\t{1[1]:<11g}\t{1[2]:<11g}\t{1[3]:<11g}\t{2:^}'.
                        format('reference', ref, 'mAP'))
 
@@ -211,7 +214,8 @@ def plotExps(cfg, res, plotName, ref_score=None):
                      label='%.2f%% %s' % (p[3]*100, p[0]))
             pl.info('{0:^28}\t{1[0]:<11.3%}\t{1[1]:<11.3%}\t{1[2]:<11.3%}\t{1[3]:<11.3%}\t{2:<.3%}'.
                        format(p[0], p[4], p[3]))
-            if ref_thr is None:
+
+            if ref_score[p[0]] == []:
                 pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                        format('', p[5]))
             
@@ -231,7 +235,7 @@ def plotExps(cfg, res, plotName, ref_score=None):
 
 def drawBoxes(cfg, dtNm, res):
     # Draw box for each picture and save
-    print('\nDisplaying evaluation results for dataset: %s' % dtNm)
+    print('\nSaving evaluation results for dataset: %s' % dtNm)
     show_params = {'thr'      : cfg.thr,
                    'evShow'   : cfg.evShow,
                    'outpath'  : None,}
@@ -240,7 +244,6 @@ def drawBoxes(cfg, dtNm, res):
         if not cfg.expsDict[e].visible:
             continue
         
-        g, d = list(g), list(d)
         nImg = len(g)
         assert len(d)==nImg
                
