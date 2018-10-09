@@ -5,7 +5,7 @@ Created on Mon Jul 23 11:37:21 2018
 @author: ADMIN
 """
 import sys
-sys.path.append('D:/work/workspace')
+sys.path.append('D:/zym/work')
 
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ from eval_exps import main
 def load_cfg(algFile):
     with open(algFile,'r') as f:
         def extractName(sourceFile):
-            sourceFile = sourceFile.strip()
+            sourceFile = sourceFile.strip().split()[0]
             targetFile = Path(sourceFile).stem
             # targetFile, _ = osp.splitext(osp.basename(sourceFile))
             return targetFile
@@ -53,10 +53,10 @@ class Config:
         expParams = namedtuple('ExpParameters', ['hr', 'vr', 'ar', 'overlap', 'filter', 'visible'])
         
         self.expsDict = {
-            # 'Reasonable':   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
-            'All'       :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
-            # 'small'     :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
-            # 'medium'    :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
+            # 'Reasonable'  :   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
+            'All'           :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
+            # 'small'       :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
+            # 'medium'      :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
         }
         
         
@@ -96,14 +96,15 @@ class Config:
 
 
 if __name__=='__main__':
-    projDir = 'D:/work/workspace/proj/evaluation'
-    dataDir = 'D:/work/data'
+    projDir = 'D:/zym/proj/evaluation'
+    dataDir = 'D:/zym/data'
     
     parser = ArgumentParser()
     parser.add_argument('--algFile', '-a', default='algNames.lst')
     parser.add_argument('--server', '-s', action='store_true', help='server environment -- no display')
-    parser.add_argument('--reapply', '-r', action='store_true', help='reload dt- and ev-')
-    parser.add_argument('--gtReapply', '-g', action='store_true', help='reload gt- npy file')
+    parser.add_argument('--dtReapply', '-d', action='store_true', help='reload dt- and ev-')
+    parser.add_argument('--gtReapply', '-g', action='store_true', help='reload gt- and ev-')
+    parser.add_argument('--evReapply', '-e', action='store_true', help='reload ev- npy file')
     parser.add_argument('--visible', '-v', action='store_true', help='output pictures with bounding boxes')
     
     args = parser.parse_args()  
@@ -112,10 +113,12 @@ if __name__=='__main__':
         plt.switch_backend('agg')
         
     cfg = Config(projDir, args.algFile, dataDir)
-    if args.reapply:
+    if args.evReapply:
+        cfg.reapply |= np.array((0, 0, 1))
+    if args.dtReapply:
         cfg.reapply |= np.array((1, 0, 1))
     if args.gtReapply:
-        cfg.reapply |= np.array((0, 1, 0))
+        cfg.reapply |= np.array((0, 1, 1))
         
     if args.visible:
         cfg.visible = 1

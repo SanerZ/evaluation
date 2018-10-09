@@ -122,7 +122,7 @@ def loadGts(cfg, pltName):
     if not cfg.reapply[1] and osp.exists(gNm):
         gt_sides = np.load(gNm)
     else:
-        gt_sides = np.maximum(gt0.heights,gt0.widths)
+        gt_sides = gt0.heights #np.maximum(gt0.heights,gt0.widths)
         np.save(gNm, gt_sides)
         
     return gts, gt_sides
@@ -204,7 +204,7 @@ def plotExps(cfg, res, plotName, ref_score):
         
         lcfg({'logfile': saveName})
         ps.info('\n\n\t')
-        print('\nExp reference threshold:')
+        print('\nInstance: %s' % k)
         pl.info('{0:^28}\t{1[0]:<11g}\t{1[1]:<11g}\t{1[2]:<11g}\t{1[3]:<11g}\t{2:^}'.
                        format('reference', ref, 'mAP'))
 
