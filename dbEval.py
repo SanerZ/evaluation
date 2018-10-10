@@ -5,7 +5,7 @@ Created on Mon Jul 23 11:37:21 2018
 @author: ADMIN
 """
 import sys
-sys.path.append('D:/zym/work')
+sys.path.append('D:/work/workspace')
 
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
@@ -67,8 +67,8 @@ class Config:
         self.dsDict = {
                 # 'benchmark_1w_gt' :  dsParams(0, 0),
                 # 'anfang_bg1w_gt'  :  dsParams(0, 0),
-                'wider'           :  dsParams(1, 1),
-                # 'wider_fddb'      :  dsParams(1, 1), 
+                # 'wider'           :  dsParams(1, 1),
+                'wider_fddb'      :  dsParams(1, 1), 
         }
         
         self.bgName = 'anfang_bg1w_gt'
@@ -96,8 +96,8 @@ class Config:
 
 
 if __name__=='__main__':
-    projDir = 'D:/zym/proj/evaluation'
-    dataDir = 'D:/zym/data'
+    projDir = 'D:/work/workspace/proj/evaluation'
+    dataDir = 'D:/work/data'
     
     parser = ArgumentParser()
     parser.add_argument('--algFile', '-a', default='algNames.lst')

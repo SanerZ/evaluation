@@ -114,6 +114,7 @@ def loadGts(cfg, pltName):
                            bnds=cfg.bnds, aspectRatio=cfg.aspectRatio)
 
         gt = gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+        print(gt)
         gt = boxResize(gt, rz, 0, cfg.aspectRatio)
         gts[e].extend(gt)
         np.save(gNm, gt)
