@@ -5,7 +5,7 @@ Created on Mon Jul 23 11:37:21 2018
 @author: ADMIN
 """
 import sys
-sys.path.append('D:/work/workspace')
+sys.path.append('D:/zym/work')
 
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
@@ -38,6 +38,9 @@ class Config:
         self.labels = [
                 'face',
                 ]
+        self.labels_valid = [
+                'face',
+                ]
 
        
         """
@@ -53,8 +56,8 @@ class Config:
         expParams = namedtuple('ExpParameters', ['hr', 'vr', 'ar', 'overlap', 'filter', 'visible'])
         
         self.expsDict = {
-            # 'Reasonable'  :   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
-            'All'           :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
+            'Reasonable'  :   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
+            'All'         :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
             # 'small'       :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
             # 'medium'      :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
         }
@@ -71,7 +74,7 @@ class Config:
                 'wider_fddb'      :  dsParams(1, 1), 
         }
         
-        self.bgName = 'anfang_bg1w_gt'
+        self.bgName = 'bg'
         
         self.thr = 0.3
         self.wrongDir = self.resDir/'det_wrong'
@@ -96,8 +99,8 @@ class Config:
 
 
 if __name__=='__main__':
-    projDir = 'D:/work/workspace/proj/evaluation'
-    dataDir = 'D:/work/data'
+    projDir = 'D:/zym/proj/evaluation'
+    dataDir = 'D:/zym/data'
     
     parser = ArgumentParser()
     parser.add_argument('--algFile', '-a', default='algNames.lst')

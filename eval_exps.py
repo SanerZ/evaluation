@@ -79,11 +79,11 @@ def loadDts(cfg, pltName):
     
     return dts#, dts.keys()
 
-def filterGtFun(bb, bbv, hr, vr, ar, bnds, aspectRatio):
-#    p = lbl in labels                           # lbl of the bounding box
-    h = bb[3]                   
-    p = h>=hr[0] and h<hr[1]              # height range
-    vf = (bbv[2]*bbv[3])/(bb[2]*bb[3]) if np.any(bbv!=0) else np.inf
+def filterGtFun(cls, bb, gt_side, hr, vr, ar, bnds, aspectRatio, labels, bbv=0):
+    p = cls in labels                           # lbl of the bounding box
+    h = bb[3]; hr = hr * np.array(gt_side)                  
+    p = p and h>=hr[0] and h<hr[1]              # height range
+    vf = (bbv[2]*bbv[3])/(bb[2]*bb[3]) if np.any(bbv) else np.inf
     p = p and vf>=vr[0] and vf<=vr[1]           # visibility range
     if ar!=0:                                   # aspect ratio range
         p = p and np.sign(ar)*abs(bb[2]/bb[3]-aspectRatio)<ar
@@ -111,10 +111,9 @@ def loadGts(cfg, pltName):
         print('\tExperiment #%d: %s' % (g+1, e))
         exp = cfg.expsDict[e]
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
-                           bnds=cfg.bnds, aspectRatio=cfg.aspectRatio)
+                           bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
 
         gt = gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
-        print(gt)
         gt = boxResize(gt, rz, 0, cfg.aspectRatio)
         gts[e].extend(gt)
         np.save(gNm, gt)
