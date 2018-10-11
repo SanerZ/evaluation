@@ -4,8 +4,8 @@ Created on Mon Jul 23 11:37:21 2018
 
 @author: ADMIN
 """
-import sys
-sys.path.append('D:/zym/work')
+
+from global_config import *
 
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
@@ -99,8 +99,6 @@ class Config:
 
 
 if __name__=='__main__':
-    projDir = 'D:/zym/proj/evaluation'
-    dataDir = 'D:/zym/data'
     
     parser = ArgumentParser()
     parser.add_argument('--algFile', '-a', default='algNames.lst')

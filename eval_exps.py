@@ -204,7 +204,7 @@ def plotExps(cfg, res, plotName, ref_score):
         
         lcfg({'logfile': saveName})
         ps.info('\n\n\t')
-        print('\nInstance: %s' % k)
+        print('\nInstance: %s\n' % k)
         pl.info('{0:^28}\t{1[0]:<11g}\t{1[1]:<11g}\t{1[2]:<11g}\t{1[3]:<11g}\t{2:^}'.
                        format('reference', ref, 'mAP'))
 
