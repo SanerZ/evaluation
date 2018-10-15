@@ -1,3 +1,4 @@
+global_config.py
 results/
 det_wrong/
 *.txt
