@@ -25,7 +25,10 @@ def load_cfg(algFile):
             return targetFile
         
         algNms = [extractName(l) for l in f.readlines()]
-        
+    
+    algNms = np.array(algNms)
+    algNms = algNms[algNms!='#']
+    
     return algNms
 
 class Config:
