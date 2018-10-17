@@ -16,12 +16,13 @@ from collections import namedtuple
 
 from eval_exps import main
 
-def load_cfg(algFile):
+def load_cfg(algFile, algFilter):
     with open(algFile,'r') as f:
         def extractName(sourceFile):
             sourceFile = sourceFile.strip().split()[0]
             targetFile = Path(sourceFile).stem
-            # targetFile, _ = osp.splitext(osp.basename(sourceFile))
+            if algFilter not in targetFile:
+                return '#'
             return targetFile
         
         algNms = [extractName(l) for l in f.readlines()]
@@ -32,7 +33,7 @@ def load_cfg(algFile):
     return algNms
 
 class Config:
-    def __init__(self, projDir, algFile, dataDir):
+    def __init__(self, projDir, algFile, algFilter, dataDir):
 
         """
         Global parameters
@@ -66,20 +67,14 @@ class Config:
         }
         
         
-        self.algNames = load_cfg(algFile)
+        self.algNames = load_cfg(algFile, algFilter)
         
         self.ds_cfgDir = dataDir
-        dsParams = namedtuple('DataSetParameters', ['resize', 'visible'])
-        self.dsDict = {
-                # 'benchmark_1w_gt' :  dsParams(0, 0),
-                # 'anfang_bg1w_gt'  :  dsParams(0, 0),
-                # 'wider'           :  dsParams(1, 1),
-                'wider_fddb'      :  dsParams(1, 1), 
-        }
+        self.dsDict = dsDict
         
         self.bgName = 'bg'
         
-        self.thr = 0.3
+        self.thr = 0.6
         self.wrongDir = self.resDir/'det_wrong'
         self.evShow = 1
         
@@ -104,6 +99,7 @@ class Config:
 if __name__=='__main__':
     
     parser = ArgumentParser()
+    parser.add_argument('--filter', '-f', default='')  
     parser.add_argument('--algFile', '-a', default='algNames.lst')
     parser.add_argument('--server', '-s', action='store_true', help='server environment -- no display')
     parser.add_argument('--dtReapply', '-d', action='store_true', help='reload dt- and ev-')
@@ -116,7 +112,7 @@ if __name__=='__main__':
     if args.server:
         plt.switch_backend('agg')
         
-    cfg = Config(projDir, args.algFile, dataDir)
+    cfg = Config(projDir, args.algFile, args.filter, dataDir)
     if args.evReapply:
         cfg.reapply |= np.array((0, 0, 1))
     if args.dtReapply:
