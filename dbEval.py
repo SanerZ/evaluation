@@ -19,15 +19,16 @@ from eval_exps import main
 def load_cfg(algFile, algFilter):
     with open(algFile,'r') as f:
         def extractName(sourceFile):
-            sourceFile = sourceFile.strip().split()[0]
-            targetFile = Path(sourceFile).stem
+            sourceFile = sourceFile.strip().split()
+            sourceFile.append('#')
+            targetFile = Path(sourceFile[0]).stem
             if algFilter not in targetFile:
                 return '#'
             return targetFile
         
         algNms = [extractName(l) for l in f.readlines()]
     
-    algNms = np.array(algNms)
+    algNms = np.unique(algNms)
     algNms = algNms[algNms!='#']
     
     return algNms
@@ -61,6 +62,7 @@ class Config:
         
         self.expsDict = {
             'Reasonable'  :   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 1),
+            'Reasonable1' :   expParams([0.06,inf],   [.01,inf],   0,  .45, 1., 1),
             'All'         :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
             # 'small'       :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
             # 'medium'      :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
