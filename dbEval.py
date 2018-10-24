@@ -8,7 +8,7 @@ Created on Mon Jul 23 11:37:21 2018
 from global_config import *
 
 from argparse import ArgumentParser
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import numpy as np
 from pathlib2 import Path
@@ -84,6 +84,7 @@ class Config:
         Remaining parameters and constants
         """
         self.visible = 0
+        self.plotOn = 1
         self.reapply = [0, 0, 0]         # if true create all the .npy file from scratch
         self.aspectRatio = 1.            # default aspect ratio for all bbs
         self.bnds = [5, 5, 635, 475]     # discard bbs outside this pixel range
@@ -110,11 +111,12 @@ if __name__=='__main__':
     parser.add_argument('--visible', '-v', action='store_true', help='output pictures with bounding boxes')
     
     args = parser.parse_args()  
+    cfg = Config(projDir, args.algFile, args.filter, dataDir)
     
     if args.server:
-        plt.switch_backend('agg')
-        
-    cfg = Config(projDir, args.algFile, args.filter, dataDir)
+        # plt.switch_backend('agg')
+        cfg.plotOn = 0
+    
     if args.evReapply:
         cfg.reapply |= np.array((0, 0, 1))
     if args.dtReapply:

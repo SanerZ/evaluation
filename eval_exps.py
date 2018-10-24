@@ -266,7 +266,8 @@ def main(cfg):
         gts, gt_sides = loadGts(cfg, pltName)
         res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
         # plot curves and bbs
-        plotExps(cfg, res, plotName, ref_score)
+        if cfg.plotOn:
+            plotExps(cfg, res, plotName, ref_score)
         if cfg.visible and cfg.dsDict[dtNm].visible:
             drawBoxes(cfg, dtNm, res)
         
