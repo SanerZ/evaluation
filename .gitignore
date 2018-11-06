@@ -3,6 +3,7 @@ results/
 det_wrong/
 *.txt
 *.npy
+*.lst
 
 run.ipynb
 algNames.lst

@@ -184,9 +184,9 @@ def plotExps(cfg, res, plotName, ref_score):
             ref_thr = ref_score[algNm]
             r = list(compRoc(g, d, ref_score=ref_thr))
             if cfg.plotAlg:
-                roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr],[]...]
+                roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
             else:
-                roc[expNm].append([algNm]+r)    # [[algNm, rec, prec, ap, recpi, ref_thr],[]...]
+                roc[expNm].append([algNm]+r)    # [[algNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
     
     
     # Generate plots
@@ -214,6 +214,10 @@ def plotExps(cfg, res, plotName, ref_score):
                      label='%.2f%% %s' % (p[3]*100, p[0]))
             pl.info('{0:^28}\t{1[0]:<11.3%}\t{1[1]:<11.3%}\t{1[2]:<11.3%}\t{1[3]:<11.3%}\t{2:<.3%}'.
                        format(p[0], p[4], p[3]))
+            pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+                       format('', p[6]))
+            # pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+                       # format('', p[7]))
 
             if ref_score[p[0]] == []:
                 pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
