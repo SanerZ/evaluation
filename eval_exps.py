@@ -56,7 +56,7 @@ def compRef(cfg):
     print('\n\n')
     return ref
 
-def loadDts(cfg, pltName):
+def loadDts(cfg, pltName, top1=False):
     print('\nLoading detections: %s' % pltName)
     dts = defaultdict(list)
     for d, a in enumerate(cfg.algNames):
@@ -73,6 +73,8 @@ def loadDts(cfg, pltName):
         dt0 = np.loadtxt(aNm+'.txt').reshape((-1,6))
         ids = dt0[:,0].astype(int)
         dt = [dt0[ids==i,1:] for i in range(max(ids)+1)]
+        if top1:
+            dt = [d[[np.argmax(d[:,-1])]] for d in dt]
         dt = boxResize(dt, 1, 0, cfg.aspectRatio)
         dts[a].extend(dt)
         np.save(aNm+'.npy', dt)
@@ -266,12 +268,12 @@ def main(cfg):
         pltName = (cfg.resDir/dtNm).as_posix()
         plotName = (cfg.resDir/'results'/dtNm).as_posix()
         # load detections and ground truth and evaluate
-        dts = loadDts(cfg, pltName) #, algNms 
+        dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].top1) #, algNms 
         gts, gt_sides = loadGts(cfg, pltName)
         res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
         # plot curves and bbs
-        if cfg.plotOn:
-            plotExps(cfg, res, plotName, ref_score)
+        # if cfg.plotOn:
+        plotExps(cfg, res, plotName, ref_score)
         if cfg.visible and cfg.dsDict[dtNm].visible:
             drawBoxes(cfg, dtNm, res)
         
