@@ -11,7 +11,7 @@ convert from matlab file
 caltech_tool_kit/dbEval.m
 
 """
-
+import pdb
 
 import numpy as np
 import os.path as osp
@@ -19,6 +19,8 @@ from pathlib2 import Path
 from collections import defaultdict
 from functools import partial
 import matplotlib.pyplot as plt
+
+from sort import Sort
 
 from detectron.ds_factory import ds_factory, ds_config
 
@@ -56,7 +58,7 @@ def compRef(cfg):
     print('\n\n')
     return ref
 
-def loadDts(cfg, pltName, top1=False):
+def loadDts(cfg, pltName, tracker=0, top1=False):
     print('\nLoading detections: %s' % pltName)
     dts = defaultdict(list)
     for d, a in enumerate(cfg.algNames):
@@ -73,9 +75,26 @@ def loadDts(cfg, pltName, top1=False):
         dt0 = np.loadtxt(aNm+'.txt').reshape((-1,6))
         ids = dt0[:,0].astype(int)
         dt = [dt0[ids==i,1:] for i in range(max(ids)+1)]
+        if tracker > 0:
+            mot_tracker = Sort(max_age = 5)
+            for i,d in enumerate(dt):
+                d = d[d[:,-1] >= tracker]
+                d[:,2:4] += d[:,:2]
+                trks = mot_tracker.update(d)
+                if trks.shape[0] == 0:
+                    dt[i] = np.zeros((1, 5))
+                    # dt[i][-1] = -1
+                    continue
+                d_idx = [np.where((t[:4] == d[:,:4]).all())[0] for t in trks]
+                score = d[d_idx, 4]
+                trks[:,2:4] -= trks[:,:2]
+                dt[i] = np.column_stack((trks[:,:4], score, trks[:,4]))
+        # print(dt)
+            # pdb.set_trace()
         if top1:
             dt = [d[[np.argmax(d[:,-1])]] for d in dt]
         dt = boxResize(dt, 1, 0, cfg.aspectRatio)
+        # print(dt)
         dts[a].extend(dt)
         np.save(aNm+'.npy', dt)
     
@@ -158,7 +177,7 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides):
             np.save(evNm, r)
     return res    
 
-def plotExps(cfg, res, plotName, ref_score):
+def plotExps(cfg, res, plotName, ref_custom, ref_score):
     """
     % Plot all ROC or PR curves.
     %
@@ -184,7 +203,7 @@ def plotExps(cfg, res, plotName, ref_score):
                  (ie+1, len(cfg.expsDict), ia+1, len(cfg.algNames), expNm, algNm))
             
             ref_thr = ref_score[algNm]
-            r = list(compRoc(g, d, ref_score=ref_thr))
+            r = list(compRoc(g, d, custom=ref_custom, ref_score=ref_thr))
             if cfg.plotAlg:
                 roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
             else:
@@ -268,12 +287,12 @@ def main(cfg):
         pltName = (cfg.resDir/dtNm).as_posix()
         plotName = (cfg.resDir/'results'/dtNm).as_posix()
         # load detections and ground truth and evaluate
-        dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].top1) #, algNms 
+        dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].tracker, cfg.dsDict[dtNm].top1) #, algNms 
         gts, gt_sides = loadGts(cfg, pltName)
         res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
         # plot curves and bbs
         # if cfg.plotOn:
-        plotExps(cfg, res, plotName, ref_score)
+        plotExps(cfg, res, plotName, cfg.ref_custom, ref_score)
         if cfg.visible and cfg.dsDict[dtNm].visible:
             drawBoxes(cfg, dtNm, res)
         

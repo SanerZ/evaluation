@@ -87,6 +87,8 @@ class Config:
         self.wrongDir = self.resDir/'det_wrong'
         self.evShow = 1
         
+        self.ref_custom = 1
+        
         """
         Remaining parameters and constants
         """
