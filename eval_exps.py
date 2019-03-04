@@ -132,11 +132,19 @@ def loadGts(cfg, pltName):
         print('\tExperiment #%d: %s' % (g+1, e))
         exp = cfg.expsDict[e]
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
-                           bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
+                   bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
 
-        gt = gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
-        gt = boxResize(gt, rz, 0, cfg.aspectRatio)
-        gts[e].extend(gt)
+        gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+        gt = boxResize(gt0.gt_boxes, rz, 0, cfg.aspectRatio)
+        gt_list = [gt,]
+        for label_valid in cfg.labels_valid:
+            filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
+                               bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=label_valid)
+
+            gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+            gt = boxResize(gt0.gt_boxes, rz, 0, cfg.aspectRatio)
+            gt_list.append(gt)
+        gts[e].extend(gt_list)
         np.save(gNm, gt)
       
     gNm = osp.join(pltName, 'gt-sides.npy')
@@ -177,7 +185,7 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides):
             np.save(evNm, r)
     return res    
 
-def plotExps(cfg, res, plotName, ref_custom, ref_score):
+def plotExps(cfg, res, plotName, ref_score):
     """
     % Plot all ROC or PR curves.
     %
@@ -203,9 +211,9 @@ def plotExps(cfg, res, plotName, ref_custom, ref_score):
                  (ie+1, len(cfg.expsDict), ia+1, len(cfg.algNames), expNm, algNm))
             
             ref_thr = ref_score[algNm]
-            r = list(compRoc(g, d, custom=ref_custom, ref_score=ref_thr))
+            r = list(compRoc(g, d, custom=cfg.ref_custom, ref_score=ref_thr))
             if cfg.plotAlg:
-                roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
+                roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr, iou_metric, catch_id, repeat_id],[]...]
             else:
                 roc[expNm].append([algNm]+r)    # [[algNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
     
@@ -237,6 +245,11 @@ def plotExps(cfg, res, plotName, ref_custom, ref_score):
                        format(p[0], p[4], p[3]))
             pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                        format('', p[6]))
+            # if len(p)>8:
+                # pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+                           # format('', p[7]))
+                # pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+                           # format('', p[8]))
             # pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                        # format('', p[7]))
 
@@ -289,12 +302,15 @@ def main(cfg):
         # load detections and ground truth and evaluate
         dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].tracker, cfg.dsDict[dtNm].top1) #, algNms 
         gts, gt_sides = loadGts(cfg, pltName)
-        res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
+        if not cfg.dsDict[dtNm].mclass:
+            gts = gts[:1]
+        for g in gts:
+            res = evalAlgs(cfg, pltName, g, dts, gt_sides)
         # plot curves and bbs
         # if cfg.plotOn:
-        plotExps(cfg, res, plotName, cfg.ref_custom, ref_score)
-        if cfg.visible and cfg.dsDict[dtNm].visible:
-            drawBoxes(cfg, dtNm, res)
+            plotExps(cfg, res, plotName, ref_score)
+            if cfg.visible and cfg.dsDict[dtNm].visible:
+                drawBoxes(cfg, dtNm, res)
         
 
         
