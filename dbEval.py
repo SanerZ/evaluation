@@ -93,7 +93,6 @@ class Config:
         Remaining parameters and constants
         """
         self.visible = 0
-        self.logger = 1
         self.reapply = [0, 0, 0]         # if true create all the .npy file from scratch
         self.aspectRatio = 1.            # default aspect ratio for all bbs
         self.bnds = [5, 5, 635, 475]     # discard bbs outside this pixel range
@@ -117,7 +116,6 @@ if __name__=='__main__':
     parser.add_argument('--dtReapply', '-d', action='store_true', help='reload dt- and ev-')
     parser.add_argument('--gtReapply', '-g', action='store_true', help='reload gt- and ev-')
     parser.add_argument('--evReapply', '-e', action='store_true', help='reload ev- npy file')
-    parser.add_argument('--loggerOFF', '-l', action='store_true', help='trun off the logger')
     parser.add_argument('--visible', '-v', action='store_true', help='output pictures with bounding boxes')
     
     args = parser.parse_args(); print(args.filter)
@@ -125,8 +123,6 @@ if __name__=='__main__':
     
     if args.server:
         plt.switch_backend('agg')
-    if args.loggerOFF:
-        cfg.logger = 0
     
     if args.evReapply:
         cfg.reapply |= np.array((0, 0, 1))

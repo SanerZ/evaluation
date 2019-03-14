@@ -20,8 +20,6 @@ from collections import defaultdict
 from functools import partial
 import matplotlib.pyplot as plt
 
-from sort import Sort
-
 from detectron.ds_factory import ds_factory, ds_config
 
 from detectron.bbs_eval import evalRes, compRoc, ref_threshold, output_bounding_boxes
@@ -53,12 +51,12 @@ def compRef(cfg):
         fp = np.ones(len(ids)).astype(bool)
         ref_thr, ref_idx = ref_threshold(ids, score, fp, nImg)
         ref[algNm] = ref_thr
-        pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+        pl.info('{0:^38}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                format(algNm, ref_thr))
     print('\n\n')
     return ref
 
-def loadDts(cfg, pltName, tracker=0, top1=False):
+def loadDts(cfg, pltName, top1=False):
     print('\nLoading detections: %s' % pltName)
     dts = defaultdict(list)
     for d, a in enumerate(cfg.algNames):
@@ -75,24 +73,8 @@ def loadDts(cfg, pltName, tracker=0, top1=False):
         dt0 = np.loadtxt(aNm+'.txt').reshape((-1,6))
         ids = dt0[:,0].astype(int)
         dt = [dt0[ids==i,1:] for i in range(max(ids)+1)]
-        if tracker > 0:
-            mot_tracker = Sort(max_age = 5)
-            for i,d in enumerate(dt):
-                d = d[d[:,-1] >= tracker]
-                d[:,2:4] += d[:,:2]
-                trks = mot_tracker.update(d)
-                if trks.shape[0] == 0:
-                    dt[i] = np.zeros((1, 5))
-                    # dt[i][-1] = -1
-                    continue
-                d_idx = [np.where((t[:4] == d[:,:4]).all())[0] for t in trks]
-                score = d[d_idx, 4]
-                trks[:,2:4] -= trks[:,:2]
-                dt[i] = np.column_stack((trks[:,:4], score, trks[:,4]))
-        # print(dt)
-            # pdb.set_trace()
         if top1:
-            dt = [d[[np.argmax(d[:,-1])]] for d in dt]
+            dt = [d[[np.argmax(d[:,3])]] for d in dt]
         dt = boxResize(dt, 1, 0, cfg.aspectRatio)
         # print(dt)
         dts[a].extend(dt)
@@ -134,7 +116,8 @@ def loadGts(cfg, pltName):
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
                            bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
 
-        gt = gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+        gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+        gt = gt0.gt_boxes
         gt = boxResize(gt, rz, 0, cfg.aspectRatio)
         gts[e].extend(gt)
         np.save(gNm, gt)
@@ -177,7 +160,7 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides):
             np.save(evNm, r)
     return res    
 
-def plotExps(cfg, res, plotName, ref_custom, ref_score):
+def plotExps(cfg, res, plotName, ref_score):
     """
     % Plot all ROC or PR curves.
     %
@@ -203,7 +186,7 @@ def plotExps(cfg, res, plotName, ref_custom, ref_score):
                  (ie+1, len(cfg.expsDict), ia+1, len(cfg.algNames), expNm, algNm))
             
             ref_thr = ref_score[algNm]
-            r = list(compRoc(g, d, custom=ref_custom, ref_score=ref_thr))
+            r = list(compRoc(g, d, custom=cfg.ref_custom, ref_score=ref_thr))
             if cfg.plotAlg:
                 roc[algNm].append([expNm]+r)    # [[expNm, rec, prec, ap, recpi, ref_thr, iou_metric],[]...]
             else:
@@ -274,7 +257,10 @@ def drawBoxes(cfg, dtNm, res):
                
         for idx in range(nImg):
             raw_img = plt.imread(gt.image_path_at(idx))
-            imgpath = cfg.wrongDir/dtNm/a/e/('%05d.jpg' % idx)
+            # gray image
+            if len(raw_img.shape)<3 or raw_img.shape[-1]==1:
+                raw_img = np.concatenate((raw_img, raw_img, raw_img), -1)
+            imgpath = cfg.wrongDir/dtNm/a/e/('%05d.png' % idx)
             imgpath.parent.mkdir(parents=True, exist_ok=True)
             show_params['outpath'] = imgpath.as_posix()
             output_bounding_boxes(raw_img, g[idx], d[idx], **show_params)
@@ -287,12 +273,11 @@ def main(cfg):
         pltName = (cfg.resDir/dtNm).as_posix()
         plotName = (cfg.resDir/'results'/dtNm).as_posix()
         # load detections and ground truth and evaluate
-        dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].tracker, cfg.dsDict[dtNm].top1) #, algNms 
+        dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].top1) #, algNms 
         gts, gt_sides = loadGts(cfg, pltName)
         res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
         # plot curves and bbs
-        # if cfg.plotOn:
-        plotExps(cfg, res, plotName, cfg.ref_custom, ref_score)
+        plotExps(cfg, res, plotName, ref_score)
         if cfg.visible and cfg.dsDict[dtNm].visible:
             drawBoxes(cfg, dtNm, res)
         
