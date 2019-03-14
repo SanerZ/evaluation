@@ -71,8 +71,6 @@ class Config:
             'Reasonable'  :   expParams([0.06,0.15],  [.01,inf],   0,  .45, 1., 0),
             #'Reasonable1' :   expParams([0.06,inf],   [.01,inf],   0,  .45, 1., 1),
             'All'         :   expParams([0,inf],      [.01,inf],   0,  .45, 1., 1),
-            # 'small'       :   expParams([0,0.07],     [.01,inf],   0,  .45, 1., 1),
-            # 'medium'      :   expParams([0.07,0.1],   [.01,inf],   0,  .45, 1., 1),
         }
         
         

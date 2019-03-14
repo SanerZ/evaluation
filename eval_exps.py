@@ -45,7 +45,7 @@ def compRef(cfg):
     lcfg({'logfile': (bgName/'bgRef').as_posix()})
     ps.info('\n\n\t')
     print('\nExp reference threshold:')
-    pl.info('{0:^28}\t{1[0]:<8g}\t{1[1]:<8g}\t{1[2]:<8g}\t{1[3]:<8g}'.\
+    pl.info('{0:^38}\t{1[0]:<8g}\t{1[1]:<8g}\t{1[2]:<8g}\t{1[3]:<8g}'.\
                   format('reference', 0.1**np.arange(4,0,-1)))
     for algNm in cfg.algNames:
         if dts[algNm] == []:
@@ -104,7 +104,7 @@ def filterGtFun(cls, bb, gt_side, hr, vr, ar, bnds, aspectRatio, labels, bbv=0):
 
 # get gt_roidb according to dtName   
 # return gts format as LTWH       
-def loadGts(cfg, pltName):
+def loadGts(cfg, pltName, top1):
     print('\nLoading ground truth: %s' % pltName)
     Path(pltName).mkdir(parents=True, exist_ok=True)
     
@@ -124,7 +124,7 @@ def loadGts(cfg, pltName):
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
                            bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
 
-        gt0.gt_filter(labels=cfg.labels, filterGt=filterGt)
+        gt0.gt_filter(labels=cfg.labels, filterGt=filterGt, top1=top1)
         gt = gt0.gt_boxes
         gt = boxResize(gt, rz, 0, cfg.aspectRatio)
         gts[e].extend(gt)
@@ -217,22 +217,20 @@ def plotExps(cfg, res, plotName, ref_score):
         lcfg({'logfile': saveName})
         ps.info('\n\n\t')
         print('\nInstance: %s\n' % k)
-        pl.info('{0:^28}\t{1[0]:<11g}\t{1[1]:<11g}\t{1[2]:<11g}\t{1[3]:<11g}\t{2:^}'.
+        pl.info('{0:^38}\t{1[0]:<11g}\t{1[1]:<11g}\t{1[2]:<11g}\t{1[3]:<11g}\t{2:^}'.
                        format('reference', ref, 'mAP'))
 
             
         for i, p in enumerate(v):
             plt.plot(p[1], p[2], color=colors[i], ls=(i%2+1)*'-', \
                      label='%.2f%% %s' % (p[3]*100, p[0]))
-            pl.info('{0:^28}\t{1[0]:<11.3%}\t{1[1]:<11.3%}\t{1[2]:<11.3%}\t{1[3]:<11.3%}\t{2:<.3%}'.
+            pl.info('{0:^38}\t{1[0]:<11.3%}\t{1[1]:<11.3%}\t{1[2]:<11.3%}\t{1[3]:<11.3%}\t{2:<.3%}'.
                        format(p[0], p[4], p[3]))
-            pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+            pl.info('{0:^38}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                        format('', p[6]))
-            # pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
-                       # format('', p[7]))
 
             if ref_score[p[0]] == []:
-                pl.info('{0:^28}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
+                pl.info('{0:^38}\t{1[0]:<8.3}\t{1[1]:<8.3}\t{1[2]:<8.3}\t{1[3]:<8.3}'.
                        format('', p[5]))
             
         plt.legend()
@@ -241,7 +239,6 @@ def plotExps(cfg, res, plotName, ref_score):
             # TODO:
             pass
         else:
-#            plt.xlim(0,1)
             plt.xlabel('Recall')
             plt.ylabel('Precision')
         plt.title(osp.basename(saveName))
@@ -282,7 +279,7 @@ def main(cfg):
         plotName = (cfg.resDir/'results'/dtNm).as_posix()
         # load detections and ground truth and evaluate
         dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].top1) #, algNms 
-        gts, gt_sides = loadGts(cfg, pltName)
+        gts, gt_sides = loadGts(cfg, pltName, cfg.dsDict[dtNm].top1)
         res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
         # plot curves and bbs
         plotExps(cfg, res, plotName, ref_score)
