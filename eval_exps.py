@@ -28,9 +28,17 @@ from detectron.bbs_utils import boxResize
 from detectron.loggers import lcfg, pl, ps
 
 def compRef(cfg):
+    ref = defaultdict(list)
+    
+    # custom reference score threshold
+    if len(cfg.ref_score) > 0:
+        for algNm in cfg.algNames:
+            ref[algNm] = cfg.ref_score
+        return ref
+    
     bgName = cfg.resDir/cfg.bgName
     dts = loadDts(cfg, bgName.as_posix())
-    ref = defaultdict(list)
+
     if len(dts) == 0:
         return ref
     

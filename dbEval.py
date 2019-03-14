@@ -81,6 +81,7 @@ class Config:
         self.ds_cfgDir = dataDir
         self.dsDict = dsDict
         
+        self.ref_score = []
         self.bgName = 'bg'
         
         self.thr = 0.1
