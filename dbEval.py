@@ -49,10 +49,11 @@ class Config:
         self.resDir = Path(projDir)
         self.labels = [
                 'face',
+                'hard_face',
                 ]
-        self.labels_valid = [
-                'face',
-                ]
+#        self.labels_valid = [
+#                'face',
+#                ]
 
        
         """

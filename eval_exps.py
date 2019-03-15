@@ -99,7 +99,8 @@ def filterGtFun(cls, bb, gt_side, hr, vr, ar, bnds, aspectRatio, labels, bbv=0):
     if ar!=0:                                   # aspect ratio range
         p = p and np.sign(ar)*abs(bb[2]/bb[3]-aspectRatio)<ar
     # bns ???
-    return p
+    p_list = [p and cls == lbl for lbl in labels]
+    return [p] + p_list
 
 
 # get gt_roidb according to dtName   
@@ -122,7 +123,7 @@ def loadGts(cfg, pltName, top1):
         print('\tExperiment #%d: %s' % (g+1, e))
         exp = cfg.expsDict[e]
         filterGt = partial(filterGtFun, hr=exp.hr, vr=exp.vr, ar=exp.ar, \
-                           bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels_valid)
+                           bnds=cfg.bnds, aspectRatio=cfg.aspectRatio, labels=cfg.labels)
 
         gt0.gt_filter(labels=cfg.labels, filterGt=filterGt, top1=top1)
         gt = gt0.gt_boxes
@@ -139,36 +140,43 @@ def loadGts(cfg, pltName, top1):
         
     return gts, gt_sides
 
-def evalAlgs(cfg, pltName, gts, dts, gt_sides):
+def evalAlgs(cfg, pltName, gts, dts, gt_sides, mclass):
     print('\nEvaluating: %s' % pltName)
     res = dict()
-    for g, expNm in enumerate(cfg.expsDict):
-        for d, algNm in enumerate(cfg.algNames):
-            # check whether exsits ev-Reasonable-FCN.npy
-            evNm = osp.join(pltName, ''.join(['ev-',expNm,'-',algNm,'.npy']))
-            if not cfg.reapply[2] and osp.exists(evNm):
-                r = np.load(evNm)
-                res[expNm, algNm] = r.tolist()
-                continue
+    exps = []
+    for gi, expNm0 in enumerate(cfg.expsDict):
+        labels = [None]+cfg.labels if mclass else [None]
+        for di, algNm in enumerate(cfg.algNames):
+            for li, l in enumerate(labels):
+                expNm = expNm0 + '_' + l if l else expNm0
+                # check whether exsits ev-Reasonable-FCN.npy
+                evNm = osp.join(pltName, ''.join(['ev-',expNm,'-',algNm,'.npy']))
+                if not cfg.reapply[2] and osp.exists(evNm):
+                    r = np.load(evNm)
+                    res[expNm, algNm] = r.tolist()
+                    exps.append(expNm)
+                    continue
+    
+                gt, dt = gts[expNm0], dts[algNm]
+                gt = [g[:,[0,1,2,3,4+li]] for g in gt]
+                if len(dt)==0:
+                    continue
+                # evalRes from gt and dt
+                print('\tExp %d/%d, Alg %d/%d, Cls %d/%d: %s/%s/%s' % \
+                      (gi+1, len(cfg.expsDict), di+1, len(cfg.algNames), li+1, len(labels), expNm, algNm, l))
+                # filter the detection results
+                exp = cfg.expsDict[expNm0]
+                hr = np.multiply(exp.hr, [1./exp.filter, exp.filter])
+                dt = [bx[np.where(np.all((bx[:,3]>hr[0]*gt_sides[i], \
+                                          bx[:,3]<hr[1]*gt_sides[i]), axis=0))] \
+                        for i, bx in enumerate(dt)]
+                r = evalRes(gt, dt, ovthresh=exp.overlap)
+                res[expNm, algNm] = r
+                np.save(evNm, r)   
+                exps.append(expNm)
+    return res, exps
 
-            gt, dt = gts[expNm], dts[algNm]
-            if len(dt)==0:
-                continue
-            # evalRes from gt and dt
-            print('\tExp %d/%d, Alg %d/%d,: %s/%s' % \
-                  (g+1, len(cfg.expsDict), d+1, len(cfg.algNames), expNm, algNm))
-            # filter the detection results
-            exp = cfg.expsDict[expNm]
-            hr = np.multiply(exp.hr, [1./exp.filter, exp.filter])
-            dt = [bx[np.where(np.all((bx[:,3]>hr[0]*gt_sides[i], \
-                                      bx[:,3]<hr[1]*gt_sides[i]), axis=0))] \
-                    for i, bx in enumerate(dt)]
-            r = evalRes(gt, dt, ovthresh=exp.overlap)
-            res[expNm, algNm] = r
-            np.save(evNm, r)
-    return res    
-
-def plotExps(cfg, res, plotName, ref_score):
+def plotExps(cfg, res, exps, plotName, ref_score):
     """
     % Plot all ROC or PR curves.
     %
@@ -183,7 +191,7 @@ def plotExps(cfg, res, plotName, ref_score):
     print('\nPlotting: %s' % plotName)
     roc = defaultdict(list)
     ref = 0.1**np.arange(4,0,-1) 
-    for ie, expNm in enumerate(cfg.expsDict):
+    for ie, expNm in enumerate(exps):
         for ia, algNm in enumerate(cfg.algNames):
             try:
                 g, d = res[expNm, algNm]
@@ -191,7 +199,7 @@ def plotExps(cfg, res, plotName, ref_score):
                 continue
 
             print('\tExp %d/%d, Alg %d/%d,: %s/%s' % \
-                 (ie+1, len(cfg.expsDict), ia+1, len(cfg.algNames), expNm, algNm))
+                 (ie+1, len(exps), ia+1, len(cfg.algNames), expNm, algNm))
             
             ref_thr = ref_score[algNm]
             r = list(compRoc(g, d, custom=cfg.ref_custom, ref_score=ref_thr))
@@ -280,12 +288,12 @@ def main(cfg):
         # load detections and ground truth and evaluate
         dts = loadDts(cfg, pltName, cfg.dsDict[dtNm].top1) #, algNms 
         gts, gt_sides = loadGts(cfg, pltName, cfg.dsDict[dtNm].top1)
-        res = evalAlgs(cfg, pltName, gts, dts, gt_sides)
-        # plot curves and bbs
-        plotExps(cfg, res, plotName, ref_score)
+        res, exps = evalAlgs(cfg, pltName, gts, dts, gt_sides, cfg.dsDict[dtNm].mclass)
+            # plot curves and bbs
+        plotExps(cfg, res, exps, plotName, ref_score)
         if cfg.visible and cfg.dsDict[dtNm].visible:
             drawBoxes(cfg, dtNm, res)
-        
+    
 
         
         
