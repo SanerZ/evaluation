@@ -262,7 +262,8 @@ def drawBoxes(cfg, dtNm, res):
                    'outpath'  : None,}
     gt = ds_factory(dtNm)
     for (e, a), (g, d) in res.items():
-        if not cfg.expsDict[e].visible:
+        eNm = e.split('_')[0]
+        if not cfg.expsDict[eNm].visible:
             continue
         
         nImg = len(g)
