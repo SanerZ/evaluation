@@ -146,9 +146,10 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides, mclass):
     exps = []
     for gi, expNm0 in enumerate(cfg.expsDict):
         labels = [None]+cfg.labels if mclass else [None]
-        for di, algNm in enumerate(cfg.algNames):
-            for li, l in enumerate(labels):
-                expNm = expNm0 + '_' + l if l else expNm0
+        for li, l in enumerate(labels):
+            expNm = expNm0 + '_' + l if l else expNm0
+            exps.append(expNm)
+            for di, algNm in enumerate(cfg.algNames):           
                 # check whether exsits ev-Reasonable-FCN.npy
                 evNm = osp.join(pltName, ''.join(['ev-',expNm,'-',algNm,'.npy']))
                 if not cfg.reapply[2] and osp.exists(evNm):
@@ -162,8 +163,8 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides, mclass):
                 if len(dt)==0:
                     continue
                 # evalRes from gt and dt
-                print('\tExp %d/%d, Alg %d/%d, Cls %d/%d: %s/%s/%s' % \
-                      (gi+1, len(cfg.expsDict), di+1, len(cfg.algNames), li+1, len(labels), expNm, algNm, l))
+                print('\tExp %d/%d, Cls %d/%d, Alg %d/%d: %s/%s' % \
+                      (gi+1, len(cfg.expsDict), li+1, len(labels), di+1, len(cfg.algNames), expNm, algNm))
                 # filter the detection results
                 exp = cfg.expsDict[expNm0]
                 hr = np.multiply(exp.hr, [1./exp.filter, exp.filter])
@@ -172,8 +173,7 @@ def evalAlgs(cfg, pltName, gts, dts, gt_sides, mclass):
                         for i, bx in enumerate(dt)]
                 r = evalRes(gt, dt, ovthresh=exp.overlap)
                 res[expNm, algNm] = r
-                np.save(evNm, r)   
-                exps.append(expNm)
+                np.save(evNm, r)                   
     return res, exps
 
 def plotExps(cfg, res, exps, plotName, ref_score):
